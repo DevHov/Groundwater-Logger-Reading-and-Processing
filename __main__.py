@@ -11,6 +11,7 @@ import glob
 import pandas as pd
 import user_definitions as ud
 import functions.data_io as fdo
+import matplotlib.pyplot as plt
 
 subfolder_loggerdata = 'Loggerdata'
 root_folder = os.path.dirname(os.getcwd())
@@ -29,10 +30,9 @@ elif len(files_xlsx) == 0:
     raise ValueError('No logger-definition-file found.')
 # %%
 
-# loading datasets
-# loading definitions
 ldf = pd.read_excel(files_xlsx[0])
 
+out = pd.DataFrame()
 for i, snr in enumerate(ldf.Seriennummer):
     match = [s for s in files_logger if str(snr) in s]
     if len(match) > 1:
@@ -44,14 +44,25 @@ for i, snr in enumerate(ldf.Seriennummer):
         continue
 
     match = match[0]
-    ds = fdo.read_logger_data(match)
+    [time, temp, p, logger_type] = fdo.read_logger_data(match)
+
+    out_i = {'Serial': snr,
+             'type': logger_type,
+             'GWM': ldf['GWM'][i],
+             'DepthNN': ldf['Tiefe NN'][i],
+             'logt': time,
+             'logT': temp,
+             'logp': p}
+    out = pd.concat([out, pd.DataFrame([out_i])], ignore_index=True)
 
 
-# %% Work in progress
-snr_ref = ud.barometric_reference_logger
-''' Pseudocode
-ref_p = ds[snr_ref].p
-for i, dsi in enumerate(ds):
-    if dsi[snr] != snr_p:
-        dsi.gwd = dsi.p - ref_p + dsi.znn
-        '''
+# %% Corrected Pressure logger data:
+serial_number_reference = ud.barometric_reference_logger
+groundwater_level = fdo.subtract_reference(out, serial_number_reference)
+
+fig, ax = plt.subplots()
+for _, row in groundwater_level.iterrows():
+    ax.plot(row['time'], row['GWL_NN'], label=row['name'])
+ax.set_xlabel('Date')
+ax.set_ylabel('Groundwater Level $(mNN)$')
+ax.legend()

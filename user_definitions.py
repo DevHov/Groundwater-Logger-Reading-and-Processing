@@ -6,4 +6,4 @@ Created on Wed Oct 22 16:33:31 2025
 """
 
 # Serial Number of barometric reference logger
-barometric_reference_logger = 123456
+barometric_reference_logger = 208750
