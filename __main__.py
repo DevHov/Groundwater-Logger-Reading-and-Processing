@@ -66,3 +66,11 @@ for _, row in groundwater_level.iterrows():
 ax.set_xlabel('Date')
 ax.set_ylabel('Groundwater Level $(mNN)$')
 ax.legend()
+
+
+fig, ax = plt.subplots()
+for _, row in groundwater_level.iterrows():
+    ax.plot(row['time'], row['temp'], label=row['name'])
+ax.set_xlabel('Date')
+ax.set_ylabel('Groundwater Temperature $(°C)$')
+ax.legend()
