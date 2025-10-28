@@ -34,7 +34,7 @@ The code development is still in very early stages.
 
 ```
 
-root\_folder
+root_folder
 ├── Repository          spyder project folder, cwd
 |   ├── __main__.py
 |   └── functions
@@ -54,24 +54,24 @@ root\_folder
 
 # further naming conventions
 
-### \*.rsk naming scheme (default)
+### \*.rsk file naming scheme (default)
 - xxxxxx\_%Y%m%d\_%H%M\*.rsk
 - xxxxxx 6-digit serial number of the logger
 - \* further commentary possible e.g. well name
 
-### \*.csv naming scheme (default)
+### \*.csv file naming scheme (default)
 - xxxxxxxx\*.csv
 - xxxxxxxx 8-digit serial number of the logger
 - \* further commentary possible e.g. well name
+
+### \.csv columns:
+- Date (datetime)
+- Temperature (float)
+- Pressure (float) - optional
 
 ### \*.xlsx columns:
 - GWM - Name of the Well
 - Tiefe NN - Depth of the Logger (NN)
 - Seriennummer - Logger Serial Number
 - GWL NN - Groundwater level at measurement start for calibration (NN)
-
-### \.csv columns:
-- Date (datetime)
-- Temperature (float)
-- Pressure (float) - optional
 
