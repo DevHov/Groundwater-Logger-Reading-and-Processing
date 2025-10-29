@@ -2,11 +2,13 @@
 """
 Created on Wed Oct 22 16:33:31 2025
 
-@author: Hoffmann
+@author: DevHov
 """
 
 # Serial Number of barometric reference logger
 barometric_reference_logger = 208750
+
+lang = 'de'  # Language of Hobo files
 
 #############################################
 # Optional:

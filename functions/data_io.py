@@ -2,7 +2,7 @@
 """
 Created on Wed Oct 22 15:07:15 2025
 
-@author: Hoffmann
+@author: DevHov
 """
 import pandas as pd
 from pyrsktools import RSK
@@ -10,8 +10,14 @@ import pyautogui
 import time
 import subprocess
 import os
-import glob
-import re
+import user_definitions as ud
+
+
+def lang(lang):
+    if lang == 'en':
+        return '(?i)temp', '(?i)press'
+    if lang == 'de':
+        return '(?i)temp', '(?i)druck'
 
 
 def read_rbr(file_str):
@@ -32,60 +38,97 @@ def read_rbr(file_str):
         print('Error while handling rbr file ', file_str)
 
 
-def read_hobo(file_str, HOBOware_exe=r"C:\Program Files\Onset Computer Corporation\HOBOware\HOBOware.exe"):
+def hobo_to_csv(file_str,
+                sleeptime=0.5,
+                HOBOware_exe=r"C:\Program Files\Onset Computer Corporation\HOBOware\HOBOware.exe"):
     process = subprocess.Popen(HOBOware_exe)
-    time.sleep(2)
+    # waiting until program is open
+    while True:
+        if 'HOBOware' in pyautogui.getAllTitles():
+            break
+        elif 'HOBOware Pro' in pyautogui.getAllTitles():
+            break
+        time.sleep(0.1)
+    pyautogui.getWindowsWithTitle('HOBOware')[0].activate()
+    pyautogui.getWindowsWithTitle('HOBOware Pro')[0].activate()
     pyautogui.hotkey('ctrl', 'o')
-    time.sleep(0.5)
+    time.sleep(sleeptime)
     pyautogui.write(file_str)
     pyautogui.press('enter')
-    time.sleep(0.5)
+    time.sleep(sleeptime)
     pyautogui.press('enter')
-    time.sleep(1)
+    time.sleep(sleeptime)
     pyautogui.hotkey('ctrl', 'e')
-    time.sleep(0.5)
+    time.sleep(sleeptime)
     pyautogui.hotkey('shift', 'tab')
-    time.sleep(0.5)
+    time.sleep(sleeptime)
     pyautogui.press('enter')
-    pyautogui.write(file_str.replace('.hobo', 'autoconvert.csv'))
+    time.sleep(sleeptime)
+    # pyautogui.write(file_str.replace('.hobo', 'autoconvert.csv'))
     pyautogui.press('enter')
     process.terminate()
 
+    print('Successfully converted: ', os.path.basename(file_str))
+
+
+def read_hobo_csv(file_str):
+    file_str_csv = file_str.replace('.hobo', '.csv')
+
+    hobo_data_raw = pd.read_csv(file_str_csv, skiprows=[0])
+    time = pd.to_datetime(hobo_data_raw.iloc[:, 1], errors='coerce').to_list()
+
+    try:
+        temp_raw = hobo_data_raw.filter(regex=lang(ud.lang)[0])
+        temp = temp_raw.iloc[:, 0].to_list()
+    except:
+        temp = [None] * len(hobo_data_raw)
+    try:
+        pressure_raw = hobo_data_raw.filter(regex=lang(ud.lang)[1])
+        p = pressure_raw.iloc[:, 0].to_list()
+    except:
+        p = -999
+
+    return time, temp, p, 'HOBO'
+
 
 def read_logger_data(file_str, HOBOware_exe):
+    print('Starting process for: ', os.path.basename(file_str))
     # Wrapper function handling logger data types.
     # RBR Handling
     if '.rsk' in file_str:
         return read_rbr(file_str)
 
     # HOBO Handling
+    file_str_csv = file_str.replace('.hobo', '.csv')
     if os.name == 'nt':
-        if '.hobo' in file_str:
-            # Isolate serial number of current logfile
-            serial = os.path.splitext(os.path.basename(file_str))[0][:8]
+        # if matchin csv does not exist yet create one
+        if '.hobo' in file_str and not os.path.exists(file_str_csv):
+            hobo_to_csv(file_str, HOBOware_exe)
+            try:
+                size = os.path.getsize(file_str_csv)
+                delay = 1
+                msg = 'Empty file created. Retrying with ', delay, 'sec delay...'
+            except:
+                print('Error during HOBO export, retrying with 1 sec delay...')
+                hobo_to_csv(file_str, 1, HOBOware_exe)
+                size = os.path.getsize(file_str_csv)
+                delay = 2
+                msg = 'Another error occured. Retrying again with ', delay, 'sec delay...'
 
-            # create a list of all existing csvs in the directory
-            csv_path = os.path.join(os.path.dirname(file_str), '*.csv')
-            csvs = glob.glob(csv_path)
-
-            # check if the serial number of the current file exists
-            csv = [val for val in csvs if serial in val]
-
-            if len(csv) == 0:
-                read_hobo(file_str)
-                csv = file_str.replace('.hobo', 'autoconvert.csv')
-            elif len(csv) > 1:
-                print('There is more than one .csv file with serial number ',
-                      serial, '. The last one is taken.')
-
-            hobo_data = pd.read_csv(csv)
+            if size == 0:
+                print(msg)
+                hobo_to_csv(file_str, delay, HOBOware_exe)
 
     elif os.name == 'posix':
-        if '.csv' in file_str:
-            return pd.read_csv(file_str)
-        else:
-            print('You\'re running your Code on a Unix system. Please ',
-                  'export your files with HOBOware on windows first.')
+        if not os.path.exists(file_str_csv):
+            errormessage = ('You\'re running your Code on a Unix system. Please',
+                            ' export your files with HOBOware on windows first.')
+            raise ValueError(errormessage)
+
+    if os.path.exists(file_str_csv):
+        return read_hobo_csv(file_str)
+    else:
+        raise ValueError('No matching file found')
 
 
 def subtract_reference(df, reference_serial, tolerance_hours=12,

@@ -2,7 +2,7 @@
 """
 Created on Tue Oct 21 15:16:07 2025
 
-@author: Hoffmann
+@author: DevHov
 
 """
 
@@ -23,13 +23,14 @@ files_rsk = glob.glob(filepath_rsk)
 files_hobo = glob.glob(filepath_hobo)
 files_logger = files_rsk + files_hobo
 files_xlsx = glob.glob(filepath_xlsx)
+# ignore excel meta files
+files_xlsx = [x for x in files_xlsx if '~$' not in x]
 
 if len(files_xlsx) > 1:
     raise ValueError('More than one logger-definition-file.')
 elif len(files_xlsx) == 0:
     raise ValueError('No logger-definition-file found.')
 # %%
-
 ldf = pd.read_excel(files_xlsx[0])
 
 out = pd.DataFrame()
@@ -44,7 +45,7 @@ for i, snr in enumerate(ldf.Seriennummer):
         continue
 
     match = match[0]
-    [time, temp, p, logger_type] = fdo.read_logger_data(match)
+    [time, temp, p, logger_type] = fdo.read_logger_data(match, ud.HOBOware_exe)
 
     out_i = {'Serial': snr,
              'type': logger_type,
