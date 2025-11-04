@@ -103,7 +103,7 @@ def read_logger_data(file_str, HOBOware_exe):
     if os.name == 'nt':
         # if matchin csv does not exist yet create one
         if '.hobo' in file_str and not os.path.exists(file_str_csv):
-            hobo_to_csv(file_str, HOBOware_exe)
+            hobo_to_csv(file_str, HOBOware_exe=HOBOware_exe)
             try:
                 size = os.path.getsize(file_str_csv)
                 delay = 1
@@ -133,21 +133,22 @@ def read_logger_data(file_str, HOBOware_exe):
 
 def subtract_reference(df, reference_serial, tolerance_hours=12,
                        sercol='Serial', tcol='logt', Tcol='logT', pcol='logp',
-                       NNcol='DepthNN', namcol='GWM', mancol='Abstich'):
+                       NNcol='DepthNN', namcol='GWM', mancol='GWL_NN'):
     # Extract the reference dataset
     ref_row = df[df[sercol] == reference_serial].iloc[0]
 
-    ref_df = pd.DataFrame({'time': ref_row[tcol], 'pref': ref_row[pcol]})
+    ref_df = pd.DataFrame({'time': ref_row[tcol],
+                           'pref': ref_row[pcol]})
     results = []
 
     for _, row in df.iterrows():
         if not isinstance(row[pcol], int) and row[sercol] != reference_serial:
-
             # Build current dataset
             dfi = pd.DataFrame({'time': row[tcol],
                                 'temp': row[Tcol],
                                 'p': row[pcol],
-                                'dNN': row[NNcol]})
+                                'dNN': row[NNcol],
+                                'GWL_NN': row[mancol]})
 
             # Align by exact timestamps (inner join)
             merged = pd.merge_asof(dfi, ref_df, on='time', direction='nearest',
@@ -155,10 +156,11 @@ def subtract_reference(df, reference_serial, tolerance_hours=12,
 
             # Subtract pressures
             merged['p_diff'] = merged['p'] - merged['pref']
-            merged['GWL_NN'] = merged['dNN'] - merged['p_diff']
-            if row[namcol] == 'GWM6':
-                print(merged['p_diff'])
+            GWL_NN_col = 'GWL_NN'  # or 'dNN'
+            merged['GWL_NN'] = merged[GWL_NN_col] - merged['p_diff']
+
             merged = merged[merged['p_diff'] > 1]
+            merged['GWL_NN'] = merged['GWL_NN'] + merged['p_diff'].iloc[0]
 
             # Store result
             results.append({
@@ -167,8 +169,7 @@ def subtract_reference(df, reference_serial, tolerance_hours=12,
                 'time': merged['time'].tolist(),
                 'temp': merged['temp'].tolist(),
                 'p_diff': merged['p_diff'].tolist(),
-                'GWL_NN': merged['GWL_NN'].tolist(),
-                'man_calib': merged['Abstich'].tolist()
+                'GWL_NN': merged['GWL_NN'].tolist()
             })
 
     return pd.DataFrame(results)
