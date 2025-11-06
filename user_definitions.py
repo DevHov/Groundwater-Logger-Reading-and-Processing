@@ -12,4 +12,6 @@ lang = 'de'  # Language of Hobo files
 
 #############################################
 # Optional:
+logger_dirname = 'Loggerdata'
+
 HOBOware_exe = r"C:\Program Files\Onset Computer Corporation\HOBOware\HOBOware.exe"
