@@ -55,3 +55,6 @@ plt.show()
 # %% Temperature depth Plot
 
 fpl.plot_temperature_profiles(data)
+
+# %%
+fpl.plot_time_depth_scatter(data)

@@ -101,10 +101,11 @@ def plot_temperature_profiles(df, cmap='turbo', figsize=(9, 6), save=False, outd
         # 4. Fill temperature matrix
         for i, depth in enumerate(depth_unique):
             sel = group[group['DepthNN'] == depth].iloc[0]
-            t = pd.to_datetime(sel['logt'])
+            t = sel['logt']
             T = pd.Series(sel['logT'], index=t).astype(
                 float).dropna().sort_index()
-
+            print(t)
+            print(T)
             if T.empty:
                 continue
 
@@ -132,6 +133,148 @@ def plot_temperature_profiles(df, cmap='turbo', figsize=(9, 6), save=False, outd
             outfile = f"{outdir}/temperature_profile_{gwm}.png"
             plt.savefig(outfile, dpi=200)
             fdo.log_message(f"Saved plot to: {outfile}")
+            plt.close(fig)
+        else:
+            plt.show()
+
+
+def plot_time_depth_scatter(df, color_by='serial', figsize=(10, 6), save=False, outdir='./plots', alpha=0.7, s=10):
+    import os
+    """
+    Scatter plot of timestamp vs depth for each GWM (monitoring well).
+    Useful to inspect time coverage and alignment of loggers inside each well.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Cleaned dataset (output of clean_dataset), expected columns:
+        ['Serial', 'GWM', 'DepthNN', 'logt', 'logT', ...]
+    color_by : str
+        'serial' (default) colors points by serial number (discrete colors),
+        'temp' colors points by temperature values (continuous colormap),
+        or None for single color.
+    figsize : tuple
+        Figure size for each subplot.
+    save : bool
+        If True, save figures to outdir instead of showing.
+    outdir : str
+        Directory for saving plots (created if necessary).
+    alpha : float
+        Marker alpha (transparency).
+    s : int
+        Marker size.
+    """
+    # basic checks
+    required = ['GWM', 'DepthNN', 'logt']
+    for c in required:
+        if c not in df.columns:
+            raise ValueError(f"DataFrame must contain column '{c}'")
+
+    os.makedirs(outdir, exist_ok=True)
+
+    gwms = df['GWM'].unique()
+
+    for gwm in gwms:
+        group = df[df['GWM'] == gwm]
+        if group.empty:
+            continue
+
+        fig, ax = plt.subplots(figsize=figsize)
+        ax.set_title(f"Time vs Depth scatter for well {gwm}")
+        ax.set_ylabel("Depth [m]")
+        ax.invert_yaxis()  # depths increasing downward
+
+        all_times = []
+        all_depths = []
+        all_c = []   # color values (serial or temp)
+        all_labels = []  # for legend mapping
+
+        # choose colormap / discrete colors if necessary
+        if color_by == 'serial':
+            uniques = group['Serial'].unique()
+            cmap = plt.get_cmap('tab20')
+            color_map = {ser: cmap(i % 20) for i, ser in enumerate(uniques)}
+        elif color_by == 'temp':
+            cmap = plt.get_cmap('viridis')
+        else:
+            cmap = None
+
+        for _, row in group.iterrows():
+            depth = row['DepthNN']
+            times = row['logt']
+            if times is None:
+                continue
+
+            # ensure times are datetime-like
+            try:
+                times_dt = pd.to_datetime(times)
+            except Exception:
+                # try mapping each element
+                times_dt = pd.to_datetime([pd.to_datetime(t) for t in times])
+
+            n = len(times_dt)
+            if n == 0:
+                continue
+
+            depths_arr = np.full(n, depth)
+
+            if color_by == 'serial':
+                cols = [color_map[row['Serial']]] * n
+                all_c.extend(cols)
+            elif color_by == 'temp':
+                # if logT present and list-like, use it; else nan
+                if 'logT' in row and isinstance(row['logT'], list) and len(row['logT']) == n:
+                    temps = np.array(row['logT'], dtype=float)
+                else:
+                    temps = np.full(n, np.nan)
+                all_c.extend(temps)
+            else:
+                all_c.extend([None] * n)
+
+            all_times.extend(times_dt)
+            all_depths.extend(depths_arr)
+            all_labels.append((row['Serial'], depth))  # for potential legend
+
+        if len(all_times) == 0:
+            plt.close(fig)
+            continue
+
+        # plotting
+        times_np = pd.to_datetime(all_times)
+        depths_np = np.array(all_depths)
+
+        if color_by == 'serial':
+            # discrete colored scatter
+            colors = all_c
+            ax.scatter(times_np, depths_np, c=colors, s=s, alpha=alpha)
+            # create legend entries for serial numbers
+            # pick one point per serial (the color_map)
+            handles = []
+            labels = []
+            for ser, col in color_map.items():
+                handles.append(plt.Line2D(
+                    [0], [0], marker='o', color='w', markerfacecolor=col, markersize=6))
+                labels.append(str(ser))
+            ax.legend(handles, labels, title='Serial',
+                      bbox_to_anchor=(1.05, 1), loc='upper left')
+        elif color_by == 'temp':
+            temps = np.array(all_c, dtype=float)
+            sc = ax.scatter(times_np, depths_np, c=temps,
+                            cmap='viridis', s=s, alpha=alpha)
+            cbar = plt.colorbar(sc, ax=ax)
+            cbar.set_label('Temperature [°C]')
+        else:
+            ax.scatter(times_np, depths_np, color='C0', s=s, alpha=alpha)
+
+        # formatting
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+        fig.autofmt_xdate()
+        ax.set_xlabel("Time")
+
+        if save:
+            outfile = os.path.join(outdir, f"time_depth_scatter_{gwm}.png")
+            plt.tight_layout()
+            plt.savefig(outfile, dpi=200)
             plt.close(fig)
         else:
             plt.show()

@@ -147,7 +147,7 @@ def read_hobo_csv(file_str):
 
     hobo_data_raw = pd.read_csv(file_str_csv, skiprows=[0])
     time = pd.to_datetime(
-        hobo_data_raw.iloc[:, 1], format='%d.%m.%y %I:%M:%S %p', errors='coerce').to_list()
+        hobo_data_raw.iloc[:, 1], errors='coerce').to_list()
 
     try:
         temp_raw = hobo_data_raw.filter(regex=lang(ud.lang)[0])
