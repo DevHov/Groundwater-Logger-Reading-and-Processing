@@ -109,19 +109,34 @@ def read_rbr(file_str):
         print('Error while handling rbr file ', file_str)
 
 
+def hobo_started():
+    """Checks if HOBOware or HOBOware pro is in open tabs."""
+    if 'HOBOware' in pyautogui.getAllTitles() or 'HOBOware Pro' in pyautogui.getAllTitles():
+        return True
+    else:
+        return False
+
+
 def hobo_to_csv(file_str,
                 sleeptime=0.5,
+                terminate_hoboware=True,
                 HOBOware_exe=r"C:\Program Files\Onset Computer Corporation\HOBOware\HOBOware.exe"):
-    process = subprocess.Popen(HOBOware_exe)
-    # waiting until program is open
-    while True:
-        if 'HOBOware' in pyautogui.getAllTitles():
-            break
-        elif 'HOBOware Pro' in pyautogui.getAllTitles():
-            break
-        time.sleep(0.1)
+
+    # Starts hoboware if neccessary
+    if not hobo_started():
+        subprocess.Popen(HOBOware_exe)
+        log_message('Starting HOBOware software.', 'info')
+        # waiting until program is open
+        while True:
+            if hobo_started():
+                break
+            time.sleep(0.1)
+
+    # Move software to cursor focus
     pyautogui.getWindowsWithTitle('HOBOware')[0].activate()
     pyautogui.getWindowsWithTitle('HOBOware Pro')[0].activate()
+
+    # Open hobo file
     pyautogui.hotkey('ctrl', 'o')
     time.sleep(sleeptime)
     pyautogui.write(file_str)
@@ -129,6 +144,8 @@ def hobo_to_csv(file_str,
     time.sleep(sleeptime)
     pyautogui.press('enter')
     time.sleep(sleeptime)
+
+    # Export to csv file
     pyautogui.hotkey('ctrl', 'e')
     time.sleep(sleeptime)
     pyautogui.hotkey('shift', 'tab')
@@ -137,9 +154,49 @@ def hobo_to_csv(file_str,
     time.sleep(sleeptime)
     # pyautogui.write(file_str.replace('.hobo', 'autoconvert.csv'))
     pyautogui.press('enter')
-    process.terminate()
+    time.sleep(sleeptime)
+    if terminate_hoboware:
+        time.sleep(sleeptime)
+        log_message('Stopping HOBOware software.', 'info')
+        pyautogui.hotkey('alt', 'f4')
 
     print('Successfully converted: ', os.path.basename(file_str))
+
+
+def last_HOBOware_call(current_file, file_list):
+    """
+    Checks whether the current file is the *last* HOBO file in the list
+    that does NOT yet have a matching .csv export.
+
+    Parameters
+    ----------
+    current_file : str
+        Path to the current logger file being processed.
+    files_logger : list of str
+        List of all logger file paths in the folder.
+
+    Returns
+    -------
+    bool
+        True if current_file is the last unexported HOBO file,
+        False otherwise.
+    """
+    # List all HOBO files
+    hobo_files = [f for f in file_list if f.lower().endswith('.hobo')]
+
+    # List all HOBO files with no corresponding csv file
+    unexported = [f for f in hobo_files if not os.path.exists(
+        f.replace('.hobo', '.csv'))]
+
+    # return false if all HOBO files are exported
+    if not unexported:
+        return False
+
+    # last unexported file
+    last_unexported = unexported[-1]
+
+    # check if current file is last file
+    return os.path.abspath(current_file) == os.path.abspath(last_unexported)
 
 
 def read_hobo_csv(file_str):
@@ -163,7 +220,7 @@ def read_hobo_csv(file_str):
     return time, temp, p, 'HOBO'
 
 
-def read_logger_data(file_str, HOBOware_exe):
+def read_logger_data(file_str, HOBOware_exe, terminate_hoboware=True):
     msg = f'Starting process for: {os.path.basename(file_str)}'
     log_message(msg)
     # Wrapper function handling logger data types.
@@ -179,7 +236,8 @@ def read_logger_data(file_str, HOBOware_exe):
         # if matchin csv does not exist yet create one
         if '.hobo' in file_str and not os.path.exists(file_str_csv):
             log_message(f'No csv found for {file_str}')
-            hobo_to_csv(file_str, HOBOware_exe=HOBOware_exe)
+            hobo_to_csv(file_str, HOBOware_exe=HOBOware_exe,
+                        terminate_hoboware=terminate_hoboware)
             try:
                 size = os.path.getsize(file_str_csv)
                 delay = 1
@@ -187,14 +245,14 @@ def read_logger_data(file_str, HOBOware_exe):
             except:
                 msg = 'Error during HOBO export, retrying with 1 sec delay...'
                 log_message(msg, 'warning')
-                hobo_to_csv(file_str, 1, HOBOware_exe)
+                hobo_to_csv(file_str, 1, terminate_hoboware, HOBOware_exe)
                 size = os.path.getsize(file_str_csv)
                 delay = 2
                 msg = 'Another error occured. Retrying again with ', delay, 'sec delay...'
 
             if size == 0:
                 log_message(msg, 'warning')
-                hobo_to_csv(file_str, delay, HOBOware_exe)
+                hobo_to_csv(file_str, delay, terminate_hoboware, HOBOware_exe)
 
     elif os.name == 'posix':
         if not os.path.exists(file_str_csv):

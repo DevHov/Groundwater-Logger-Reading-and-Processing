@@ -12,3 +12,4 @@
 .spyproject/config/workspace.ini
 __pycache__/user_definitions.cpython-311.pyc
 functions/__pycache__/data_io.cpython-311.pyc
+functions/__pycache__/plotting.cpython-311.pyc

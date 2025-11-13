@@ -14,4 +14,8 @@ lang = 'de'  # Language of Hobo files
 # Optional:
 logger_dirname = 'Loggerdata'
 
+# Terminate the Hoboware Software after the last Conversion
+terminate_HOBOware = True
+
+# Define another path for the HOBOware program.
 HOBOware_exe = r"C:\Program Files\Onset Computer Corporation\HOBOware\HOBOware.exe"

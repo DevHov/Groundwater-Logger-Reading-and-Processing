@@ -25,7 +25,13 @@ for i, snr in enumerate(logger_definition['Seriennummer']):
     if match is None:
         continue
 
-    [time, temp, p, logger_type] = fdo.read_logger_data(match, ud.HOBOware_exe)
+    if fdo.last_HOBOware_call(match, files_logger):
+        terminate_HOBOware = ud.terminate_HOBOware
+    else:
+        terminate_HOBOware = False
+
+    [time, temp, p, logger_type] = fdo.read_logger_data(
+        match, ud.HOBOware_exe, terminate_HOBOware)
 
     data_i = {'Serial': snr,
               'type': logger_type,
