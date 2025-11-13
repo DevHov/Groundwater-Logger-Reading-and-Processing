@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import interp1d
 import os
+import re
+import functions.io_utils as fio
 
 
 def plot_gw(ax, df, xcol, ycol, ylabel, xlabel='Date', namcol='GWM'):
@@ -50,7 +52,7 @@ def plot_temperature_profiles(df, cmap='turbo', figsize=(9, 6), save=False, outd
     df_temp = df[~df['logT'].isin([-999])]
 
     if df_temp.empty:
-        print("No temperature loggers found.")
+        fio.log_message('No temperature loggers found.', 'warning')
         return
 
     # --- 2. Iterate wells
@@ -72,7 +74,7 @@ def plot_temperature_profiles(df, cmap='turbo', figsize=(9, 6), save=False, outd
             all_depths.append(depth)
 
         if len(all_times) == 0:
-            print(f"No valid data for {gwm}")
+            fio.log_message(f"No valid data for {gwm}", 'warning')
             continue
 
         # --- 3. Define uniform time and depth grid
@@ -124,9 +126,11 @@ def plot_temperature_profiles(df, cmap='turbo', figsize=(9, 6), save=False, outd
 
         if save:
             os.makedirs(outdir, exist_ok=True)
-            outfile = f"{outdir}/temperature_profile_{gwm}.png"
+            gwm_filename = re.sub(r'[\\/:"*?<>| ]+', '_', str(gwm))
+            outfile = os.path.join(
+                outdir, f"temperature_profile_{gwm_filename}.png")
             plt.savefig(outfile, dpi=200)
-            print(f"Saved plot to {outfile}")
+            fio.log_message(f"Saved plot to {outfile}.", 'info')
             plt.close(fig)
         else:
             plt.show()
@@ -265,9 +269,13 @@ def plot_time_depth_scatter(df, color_by='serial', figsize=(10, 6), save=False, 
         ax.set_xlabel("Time")
 
         if save:
-            outfile = os.path.join(outdir, f"time_depth_scatter_{gwm}.png")
+            os.makedirs(outdir, exist_ok=True)
+            gwm_filename = re.sub(r'[\\/:"*?<>| ]+', '_', str(gwm))
+            outfile = os.path.join(
+                outdir, f"time_depth_scatter_{gwm_filename}.png")
             plt.tight_layout()
             plt.savefig(outfile, dpi=200)
+            fio.log_message(f"Saved plot to {outfile}.", 'info')
             plt.close(fig)
         else:
             plt.show()

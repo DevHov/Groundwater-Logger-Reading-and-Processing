@@ -1,6 +1,6 @@
 # Groundwater-Processing
 
-This code is still in very early development before version alpha.
+This code is still in very early development.
 
 
 
@@ -12,13 +12,13 @@ workflow containing the following steps:
 
 
 1. raw data import of \*.rsk and \*.hobo or \.csv import
-    1.1 for \*.rsk the [pyRSKtools](https://docs-static.rbr-global.com/pyrsktools/index.html) from RBR is used
-    1.2 for \*.hobo due to the encryption of the files the official HOBOware
+1.1 for \*.rsk the [pyRSKtools](https://docs-static.rbr-global.com/pyrsktools/index.html) from RBR is used
+1.2 for \*.hobo due to the encryption of the files the official HOBOware
     Software (Windows) must be used. The GUI is called by the script and
     automatically saves a converted csv in the same folder. This process is
     only called once. If there is already a csv file with amatching serial
     number the csv is directly imported (this can be done in any OS)
-    1.3 for \*.csv for any other type of logger data Some preprocessing might
+1.3 for \*.csv for any other type of logger data Some preprocessing might
     be needed - see naming conventions.
 2. barometric compensation with reference logger
 3. Calibration with initial manual measurement
@@ -27,8 +27,6 @@ workflow containing the following steps:
    4.2 temperature distribution as 2d heatmap (x: time, y: depth,
    color: temperature)
    4.3 combined plot
-
-The code development is still in very early stages.
 
 # folder structure
 
@@ -45,10 +43,8 @@ root_folder
 |   ├── *.csv          Hobo Logger Data (naming see below)
 |   └── *.xlsx          Metadata and Installation Data (naming see below)
 |
-└── Results            Is created by the code
-├── Data           Contains all generated data
-└── Plots
-└── *.png      Plotted graphs
+└── plots
+    └── *.png      Plotted graphs
 
 ```
 

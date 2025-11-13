@@ -13,3 +13,5 @@
 __pycache__/user_definitions.cpython-311.pyc
 functions/__pycache__/data_io.cpython-311.pyc
 functions/__pycache__/plotting.cpython-311.pyc
+functions/__pycache__/io_utils.cpython-311.pyc
+functions/__pycache__/data_processing.cpython-311.pyc
