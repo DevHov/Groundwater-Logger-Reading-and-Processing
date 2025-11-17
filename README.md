@@ -12,14 +12,18 @@ workflow containing the following steps:
 
 
 1. raw data import of \*.rsk and \*.hobo or \.csv import
+
 1.1 for \*.rsk the [pyRSKtools](https://docs-static.rbr-global.com/pyrsktools/index.html) from RBR is used
+
 1.2 for \*.hobo due to the encryption of the files the official HOBOware
     Software (Windows) must be used. The GUI is called by the script and
     automatically saves a converted csv in the same folder. This process is
-    only called once. If there is already a csv file with amatching serial
+    only called once. If there is already a csv file with a matching serial
     number the csv is directly imported (this can be done in any OS)
-1.3 for \*.csv for any other type of logger data Some preprocessing might
+    
+1.3 for \*.csv for any other type of logger data some preprocessing might
     be needed - see naming conventions.
+    
 2. barometric compensation with reference logger
 3. Calibration with initial manual measurement
 4. time-series plot for each well in terms of:
@@ -33,15 +37,18 @@ workflow containing the following steps:
 ```
 
 root_folder
-├── Repository          spyder project folder, cwd
+├── Repository                  spyder project folder, cwd
 |   ├── __main__.py
+|   ├── user_definitions.py     adjustments wich can be made by user
 |   └── functions
-|       └── data_io.py  input/output functions
+|       ├── io_utils.py         general functions, input/output functions
+|       ├── data_processing.py  dataset uniformity, reference identification and calculation
+|       └── plotting.py         plotting functions
 |
 ├── Loggerdata
-|   ├── *.rsk           RBR Logger Data (naming see below)
-|   ├── *.csv          Hobo Logger Data (naming see below)
-|   └── *.xlsx          Metadata and Installation Data (naming see below)
+|   ├── *.rsk                   RBR Logger Data (naming see below)
+|   ├── *.hobo and/or *.csv     Hobo Logger Data (naming see below)
+|   └── *.xlsx                  Metadata and Installation Data (naming see below)
 |
 └── plots
     └── *.png      Plotted graphs
@@ -55,7 +62,7 @@ root_folder
 - xxxxxx 6-digit serial number of the logger
 - \* further commentary possible e.g. well name
 
-### \*.csv file naming scheme (default)
+### \*.hobo or \*.csv file naming scheme (default)
 - xxxxxxxx\*.csv
 - xxxxxxxx 8-digit serial number of the logger
 - \* further commentary possible e.g. well name
